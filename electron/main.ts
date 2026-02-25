@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell, Notification } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -9,7 +10,42 @@ app.disableHardwareAcceleration();
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL !== undefined;
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 
+function getProductionIndexCandidates() {
+  return [
+    path.join(app.getAppPath(), 'dist', 'index.html'),
+    path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html'),
+    path.join(process.resourcesPath, 'app', 'dist', 'index.html'),
+  ];
+}
+
+async function loadProductionApp(window: BrowserWindow) {
+  const candidates = getProductionIndexCandidates();
+
+  for (const candidate of candidates) {
+    try {
+      const exists = fs.existsSync(candidate);
+      console.log('[Electron] Checking index candidate:', candidate, 'exists =', exists);
+      if (!exists) continue;
+      await window.loadFile(candidate);
+      console.log('[Electron] Loaded production file:', candidate);
+      return;
+    } catch (error) {
+      console.error('[Electron] Failed to load candidate:', candidate, error);
+    }
+  }
+
+  throw new Error(`Failed to load renderer. Checked: ${candidates.join(' | ')}`);
+}
+
 function createWindow() {
+  const preloadCandidates = [
+    path.join(app.getAppPath(), 'preload.js'),
+    path.join(process.resourcesPath, 'app.asar', 'preload.js'),
+    path.join(process.resourcesPath, 'app', 'preload.js'),
+  ];
+  const preloadPath = preloadCandidates.find(candidate => fs.existsSync(candidate)) || preloadCandidates[0];
+  console.log('[Electron] Preload path:', preloadPath);
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -18,7 +54,7 @@ function createWindow() {
     frame: true,
     backgroundColor: '#0A0A0C',
     webPreferences: {
-      preload: path.join(app.getAppPath(), 'preload.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -36,24 +72,34 @@ function createWindow() {
     }
   });
 
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      console.warn('[Electron] ready-to-show timeout, forcing window.show()');
+      mainWindow.show();
+    }
+  }, 8000);
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('[Electron] did-fail-load:', { errorCode, errorDescription, validatedURL });
+  });
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[Electron] render-process-gone:', details);
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('[Electron] did-finish-load:', mainWindow?.webContents.getURL());
+  });
+
   // Load app
   if (isDev) {
     console.log('[Electron] Loading dev server:', VITE_DEV_SERVER_URL);
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    // In production, files are in resources/app.asar or resources/app
-    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
-    console.log('[Electron] Loading production file:', indexPath);
     console.log('[Electron] app.getAppPath():', app.getAppPath());
     console.log('[Electron] process.resourcesPath:', process.resourcesPath);
-    mainWindow.loadFile(indexPath).catch(err => {
-      console.error('[Electron] Failed to load index.html:', err);
-      // Fallback: try alternative paths
-      const altPath = path.join(process.resourcesPath, 'app', 'dist', 'index.html');
-      console.log('[Electron] Trying alternative path:', altPath);
-      mainWindow?.loadFile(altPath).catch(err2 => {
-        console.error('[Electron] Alternative path also failed:', err2);
-      });
+    loadProductionApp(mainWindow).catch(err => {
+      console.error('[Electron] Failed to load production app:', err);
     });
   }
 
