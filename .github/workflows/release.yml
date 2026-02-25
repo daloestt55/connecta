@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_DEV_MODE: false
+
+    - name: Create release archive
+      run: |
+        cd dist
+        zip -r ../connecta-${{ github.ref_name }}.zip .
+        cd ..
+        tar -czf connecta-${{ github.ref_name }}.tar.gz -C dist .
+
+    - name: Extract release notes
+      id: extract-release-notes
+      run: |
+        VERSION=${{ github.ref_name }}
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          connecta-${{ github.ref_name }}.zip
+          connecta-${{ github.ref_name }}.tar.gz
+        body: |
+          ## Connecta ${{ github.ref_name }}
+          
+          ### 🎉 What's New
+          - Premium subscription system with 12+ features
+          - Complete Store with real payment processing
+          - Profile customization with premium themes and colors
+          - Avatar frames for premium users
+          - Active subscription management
+          - Real Telegram bot integration for bug reports
+          - Link generation system (connecta.link)
+          - Friends system with database integration
+          - Verification badges
+          - Role color customization
+          
+          ### 📦 Installation
+          1. Download the zip or tar.gz file
+          2. Extract to your web server
+          3. Configure environment variables
+          4. Open index.html in your browser
+          
+          ### 🔧 Requirements
+          - Modern web browser (Chrome, Firefox, Safari, Edge)
+          - Node.js 20+ (for development)
+          - Supabase project (for database features)
+          
+          ### 📝 Full Changelog
+          See all changes in [CHANGELOG.md](CHANGELOG.md)
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

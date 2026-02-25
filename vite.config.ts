@@ -1,0 +1,36 @@
+import { defineConfig } from 'vite'
+import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  // Base path for GitHub Pages deployment
+  // Change this to '/your-repo-name/' if deploying to GitHub Pages
+  // For custom domain or root deployment, use '/'
+  base: '/',
+  
+  plugins: [
+    // The React and Tailwind plugins are both required for Make, even if
+    // Tailwind is not being actively used – do not remove them
+    react(),
+    tailwindcss(),
+  ],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+  },
+  resolve: {
+    alias: {
+      // Alias @ to the src directory
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  build: {
+    // Output directory for production build
+    outDir: 'dist',
+    // Generate sourcemaps for debugging
+    sourcemap: false,
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
+  },
+})
