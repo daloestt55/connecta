@@ -18,12 +18,6 @@
   "extraMetadata": {
     "main": "main.js"
   },
-  "extraResources": [
-    {
-      "from": "build/icon.png",
-      "to": "icon.png"
-    }
-  ],
   "win": {
     "target": [
       {
@@ -35,7 +29,6 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "build/icon.ico",
     "artifactName": "${productName}-Setup-${version}.${ext}",
     "publish": null,
     "verifyUpdateCodeSignature": false
@@ -45,15 +38,10 @@
     "perMachine": false,
     "allowToChangeInstallationDirectory": true,
     "allowElevation": true,
-    "installerIcon": "build/icon.ico",
-    "uninstallerIcon": "build/icon.ico",
-    "installerHeaderIcon": "build/icon.ico",
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Connecta",
-    "deleteAppDataOnUninstall": false,
-    "include": "build/installer.nsh",
-    "license": "LICENSE.txt"
+    "deleteAppDataOnUninstall": false
   },
   "portable": {
     "artifactName": "${productName}-Portable-${version}.${ext}"
@@ -65,12 +53,10 @@
         "arch": ["x64", "arm64"]
       }
     ],
-    "icon": "build/icon.icns",
     "category": "public.app-category.social-networking"
   },
   "linux": {
     "target": ["AppImage", "deb"],
-    "icon": "build/icons",
     "category": "Network;InstantMessaging"
   },
   "compression": "maximum",
