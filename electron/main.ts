@@ -1,14 +1,9 @@
 import { app, BrowserWindow, ipcMain, shell, Notification } from 'electron';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
-
-// Handle __dirname in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL !== undefined;
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 
 function createWindow() {
@@ -20,7 +15,7 @@ function createWindow() {
     frame: true,
     backgroundColor: '#0A0A0C',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(app.getAppPath(), 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -43,11 +38,19 @@ function createWindow() {
     console.log('[Electron] Loading dev server:', VITE_DEV_SERVER_URL);
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    // In production, files are in resources/app.asar or resources/app
+    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
     console.log('[Electron] Loading production file:', indexPath);
-    console.log('[Electron] __dirname:', __dirname);
+    console.log('[Electron] app.getAppPath():', app.getAppPath());
+    console.log('[Electron] process.resourcesPath:', process.resourcesPath);
     mainWindow.loadFile(indexPath).catch(err => {
       console.error('[Electron] Failed to load index.html:', err);
+      // Fallback: try alternative paths
+      const altPath = path.join(process.resourcesPath, 'app', 'dist', 'index.html');
+      console.log('[Electron] Trying alternative path:', altPath);
+      mainWindow?.loadFile(altPath).catch(err2 => {
+        console.error('[Electron] Alternative path also failed:', err2);
+      });
     });
   }
 
