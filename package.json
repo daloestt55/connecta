@@ -1,7 +1,7 @@
 {
   "name": "connecta",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Modern communication platform with premium features",
   "author": "Connecta Team",
   "main": "dist-electron/main.js",
@@ -23,7 +23,7 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
-    "release": "node -e \"console.log('Use: .\\\\release.ps1 -Version \\\"1.0.0\\\"')\"",
+    "release": "node -e \"console.log('Use: .\\\\release.ps1 -Version \\\"1.0.1\\\"')\"",
     "version:check": "node -e \"console.log('Current version:', require('./package.json').version)\""
   },
   "dependencies": {
