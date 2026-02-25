@@ -658,7 +658,8 @@ export function Friends({ onOpenChat, shouldOpenAddFriend, onAddFriendFormChange
                   <div className="relative w-32 h-32 rounded-full border-4 border-white/30 overflow-hidden bg-[#111114]">
                     <Avatar
                       src={incomingCall.avatar}
-                      alt={incomingCall.username}                      name={outgoingCall.username}                      name={incomingCall.username}
+                      alt={incomingCall.username}
+                      name={incomingCall.username}
                       className="w-full h-full"
                     />
                   </div>

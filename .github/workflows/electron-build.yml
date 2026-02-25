@@ -1,0 +1,160 @@
+name: Build Electron Desktop
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Desktop
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build Electron app (Windows)
+        env:
+          ELECTRON: true
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run build:win
+      
+      - name: List build artifacts
+        shell: pwsh
+        run: |
+          if (Test-Path "release") {
+            Write-Host "✅ Build successful!" -ForegroundColor Green
+            Write-Host ""
+            Write-Host "Build artifacts:" -ForegroundColor Cyan
+            Get-ChildItem "release" -File | ForEach-Object {
+              $size = [math]::Round($_.Length / 1MB, 2)
+              Write-Host "  📦 $($_.Name) - $size MB" -ForegroundColor White
+            }
+          } else {
+            Write-Host "❌ No release folder found" -ForegroundColor Red
+            exit 1
+          }
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: connecta-windows-${{ github.sha }}
+          path: |
+            release/*.exe
+            release/*.yml
+            release/*.blockmap
+          retention-days: 30
+          if-no-files-found: error
+      
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/Connecta-Setup-*.exe
+            release/Connecta-Portable-*.exe
+            release/*.yml
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## 🎉 Connecta Desktop v${{ github.ref_name }}
+            
+            ### 📥 Загрузка
+            
+            - **Connecta-Setup-*.exe** - Установщик для Windows (рекомендуется)
+            - **Connecta-Portable-*.exe** - Портативная версия (без установки)
+            
+            ### ✨ Возможности
+            - 🖥️ Полноценное десктопное приложение
+            - 🌐 Работает через интернет (Supabase)
+            - 💬 Реальное время обмена сообщениями
+            - 📁 Отправка файлов (до 50MB)
+            - 🔐 Безопасность с Row Level Security
+            
+            ### 📋 Системные требования
+            - Windows 10/11 (64-bit)
+            - 200 MB свободного места
+            - Интернет соединение
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Можно добавить сборку для macOS и Linux
+  # build-macos:
+  #   name: Build macOS Desktop
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
+  #     
+  #     - name: Install dependencies
+  #       run: npm ci
+  #     
+  #     - name: Build Electron app (macOS)
+  #       env:
+  #         ELECTRON: true
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: npm run build:mac
+  #     
+  #     - name: Upload macOS artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: connecta-macos-${{ github.sha }}
+  #         path: |
+  #           release/*.dmg
+  #           release/*.zip
+  #         retention-days: 30
+
+  # build-linux:
+  #   name: Build Linux Desktop
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
+  #     
+  #     - name: Install dependencies
+  #       run: npm ci
+  #     
+  #     - name: Build Electron app (Linux)
+  #       env:
+  #         ELECTRON: true
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: npm run build:linux
+  #     
+  #     - name: Upload Linux artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: connecta-linux-${{ github.sha }}
+  #         path: |
+  #           release/*.AppImage
+  #           release/*.deb
+  #         retention-days: 30

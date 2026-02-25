@@ -1,0 +1,81 @@
+{
+  "appId": "com.connecta.app",
+  "productName": "Connecta",
+  "artifactName": "${productName}-Setup-${version}.${ext}",
+  "directories": {
+    "output": "release",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    {
+      "from": "dist-electron",
+      "to": ".",
+      "filter": ["**/*"]
+    },
+    "package.json"
+  ],
+  "extraMetadata": {
+    "main": "main.js"
+  },
+  "extraResources": [
+    {
+      "from": "build/icon.png",
+      "to": "icon.png"
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.ico",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "publish": null,
+    "verifyUpdateCodeSignature": false
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "allowElevation": true,
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico",
+    "installerHeaderIcon": "build/icon.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Connecta",
+    "deleteAppDataOnUninstall": false,
+    "include": "build/installer.nsh",
+    "license": "LICENSE.txt"
+  },
+  "portable": {
+    "artifactName": "${productName}-Portable-${version}.${ext}"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "build/icon.icns",
+    "category": "public.app-category.social-networking"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "build/icons",
+    "category": "Network;InstantMessaging"
+  },
+  "compression": "maximum",
+  "asar": true,
+  "asarUnpack": [
+    "**/*.node"
+  ]
+}
