@@ -3,6 +3,9 @@ import * as path from 'path';
 
 let mainWindow: BrowserWindow | null = null;
 
+// Mitigates black screen issues on some Windows GPU drivers
+app.disableHardwareAcceleration();
+
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL !== undefined;
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 
@@ -152,15 +155,21 @@ app.on('open-url', (event, url) => {
 app.on('web-contents-created', (_, contents) => {
   // Disable navigation to external sites in the app
   contents.on('will-navigate', (event, navigationUrl) => {
-    const parsedUrl = new URL(navigationUrl);
-    
     if (isDev) {
+      const parsedUrl = new URL(navigationUrl);
       // Allow localhost navigation in dev
       if (parsedUrl.origin !== VITE_DEV_SERVER_URL) {
         event.preventDefault();
       }
-    } else {
-      // Block all navigation in production
+      return;
+    }
+
+    // In production allow app local files, block external web navigation
+    const isLocalFile = navigationUrl.startsWith('file://');
+    const isAppProtocol = navigationUrl.startsWith('app://');
+    const isAboutBlank = navigationUrl === 'about:blank';
+
+    if (!isLocalFile && !isAppProtocol && !isAboutBlank) {
       event.preventDefault();
     }
   });
