@@ -19,7 +19,6 @@ function createWindow() {
     minHeight: 768,
     frame: true,
     backgroundColor: '#0A0A0C',
-    icon: path.join(__dirname, '../build/icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -41,9 +40,15 @@ function createWindow() {
 
   // Load app
   if (isDev) {
+    console.log('[Electron] Loading dev server:', VITE_DEV_SERVER_URL);
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, 'dist', 'index.html');
+    console.log('[Electron] Loading production file:', indexPath);
+    console.log('[Electron] __dirname:', __dirname);
+    mainWindow.loadFile(indexPath).catch(err => {
+      console.error('[Electron] Failed to load index.html:', err);
+    });
   }
 
   // Handle external links
