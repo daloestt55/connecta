@@ -7,6 +7,17 @@ let mainWindow: BrowserWindow | null = null;
 // Mitigates black screen issues on some Windows GPU drivers
 app.disableHardwareAcceleration();
 
+const userDataPath = path.join(process.env.LOCALAPPDATA || app.getPath('appData'), 'Connecta');
+try {
+  if (!fs.existsSync(userDataPath)) {
+    fs.mkdirSync(userDataPath, { recursive: true });
+  }
+  app.setPath('userData', userDataPath);
+  console.log('[Electron] userData path:', userDataPath);
+} catch (error) {
+  console.error('[Electron] Failed to set userData path:', error);
+}
+
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL !== undefined;
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 
@@ -40,8 +51,11 @@ async function loadProductionApp(window: BrowserWindow) {
 function createWindow() {
   const preloadCandidates = [
     path.join(app.getAppPath(), 'preload.js'),
+    path.join(app.getAppPath(), 'dist-electron', 'preload.js'),
     path.join(process.resourcesPath, 'app.asar', 'preload.js'),
     path.join(process.resourcesPath, 'app', 'preload.js'),
+    path.join(process.resourcesPath, 'app.asar', 'dist-electron', 'preload.js'),
+    path.join(process.resourcesPath, 'app', 'dist-electron', 'preload.js'),
   ];
   const preloadPath = preloadCandidates.find(candidate => fs.existsSync(candidate)) || preloadCandidates[0];
   console.log('[Electron] Preload path:', preloadPath);

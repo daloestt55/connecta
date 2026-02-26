@@ -75,6 +75,22 @@ interface DeviceSession {
   userAgent?: string;
 }
 
+const VALID_TABS = [
+  "dashboard",
+  "channels",
+  "friends",
+  "chats",
+  "calls",
+  "store",
+  "subscriptions",
+  "profile",
+  "admin",
+] as const;
+
+const isValidTab = (tab: string): boolean => {
+  return VALID_TABS.includes(tab as (typeof VALID_TABS)[number]);
+};
+
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
   try {
@@ -90,7 +106,8 @@ export default function App() {
     return saved === 'true';
   });
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('connecta_active_tab') || 'dashboard';
+    const savedTab = localStorage.getItem('connecta_active_tab') || 'dashboard';
+    return isValidTab(savedTab) ? savedTab : 'dashboard';
   });
   const [showSettings, setShowSettings] = useState(false);
   const [showCreateChannelDialog, setShowCreateChannelDialog] = useState(false);
@@ -247,6 +264,10 @@ export default function App() {
 
   // Save active tab
   useEffect(() => {
+    if (!isValidTab(activeTab)) {
+      setActiveTab('dashboard');
+      return;
+    }
     localStorage.setItem('connecta_active_tab', activeTab);
   }, [activeTab]);
 
@@ -663,6 +684,8 @@ export default function App() {
   const handleTabChange = (tab: string) => {
     if (tab === "settings") {
       setShowSettings(true);
+    } else if (!isValidTab(tab)) {
+      setActiveTab('dashboard');
     } else {
       setActiveTab(tab);
     }
@@ -670,7 +693,7 @@ export default function App() {
 
   // Handle navigation from search
   const handleNavigateFromSearch = (tab: string, data?: any) => {
-    setActiveTab(tab);
+    setActiveTab(isValidTab(tab) ? tab : 'dashboard');
     if (data?.serverId) {
       setSelectedServer(data.serverId);
     }
