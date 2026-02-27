@@ -21,6 +21,33 @@ try {
 const isDev = process.env.NODE_ENV === 'development' || process.env.VITE_DEV_SERVER_URL !== undefined;
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function showStartupError(window: BrowserWindow, title: string, details: string) {
+  const html = `
+    <html>
+      <body style="margin:0;background:#0A0A0C;color:#F3F4F6;font-family:Inter,system-ui,sans-serif;">
+        <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;">
+          <div style="max-width:860px;width:100%;background:#111218;border-radius:12px;padding:20px;">
+            <h2 style="margin:0 0 12px 0;">${escapeHtml(title)}</h2>
+            <p style="opacity:.85;">Connecta не смог загрузить интерфейс. Нажмите F12 или Ctrl+Shift+I для DevTools.</p>
+            <pre style="white-space:pre-wrap;word-break:break-word;opacity:.95;">${escapeHtml(details)}</pre>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  window.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+}
+
 function getProductionIndexCandidates() {
   return [
     path.join(app.getAppPath(), 'dist', 'index.html'),
@@ -95,10 +122,24 @@ function createWindow() {
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     console.error('[Electron] did-fail-load:', { errorCode, errorDescription, validatedURL });
+    if (!isDev && errorCode !== -3) {
+      showStartupError(
+        mainWindow!,
+        'Renderer did-fail-load',
+        `errorCode: ${errorCode}\nerrorDescription: ${errorDescription}\nurl: ${validatedURL}`
+      );
+    }
   });
 
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     console.error('[Electron] render-process-gone:', details);
+    if (!isDev) {
+      showStartupError(
+        mainWindow!,
+        'Renderer process crashed',
+        JSON.stringify(details, null, 2)
+      );
+    }
   });
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -107,6 +148,13 @@ function createWindow() {
 
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
     console.log('[Renderer Console]', { level, message, line, sourceId });
+  });
+
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    const openDevTools = input.key === 'F12' || (input.control && input.shift && input.key.toUpperCase() === 'I');
+    if (openDevTools) {
+      mainWindow?.webContents.openDevTools({ mode: 'detach' });
+    }
   });
 
   // Load app
@@ -118,6 +166,7 @@ function createWindow() {
     console.log('[Electron] process.resourcesPath:', process.resourcesPath);
     loadProductionApp(mainWindow).catch(err => {
       console.error('[Electron] Failed to load production app:', err);
+      showStartupError(mainWindow!, 'Failed to load production app', String(err));
     });
   }
 
