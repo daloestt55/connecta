@@ -105,6 +105,10 @@ function createWindow() {
     console.log('[Electron] did-finish-load:', mainWindow?.webContents.getURL());
   });
 
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log('[Renderer Console]', { level, message, line, sourceId });
+  });
+
   // Load app
   if (isDev) {
     console.log('[Electron] Loading dev server:', VITE_DEV_SERVER_URL);
